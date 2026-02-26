@@ -1,0 +1,499 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== USERS & AUTH ====================
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  name          String
+  avatarUrl     String?
+  role          String   @default("user") // user, merchant, admin
+  passwordHash  String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Relations
+  merchant      Merchant?
+  orders        Order[]
+  reviews       Review[]
+  votes         Vote[]
+  evidencePosts EvidencePost[]
+  contentPosts  ContentPost[]
+  contentComments ContentComment[]
+  challengeEntries ChallengeEntry[]
+  creditsLedger CreditsLedger[]
+  badges        UserBadge[]
+  ambassadorships BrandAmbassador[]
+}
+
+model UserBadge {
+  id        String   @id @default(cuid())
+  userId    String
+  badge     String   // evidence_hunter, landmine_terminator, compare_maniac, monthly_referee, etc.
+  earnedAt  DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+// ==================== MERCHANTS & BRANDS ====================
+
+model Merchant {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  businessName  String
+  description   String?
+  logoUrl       String?
+  verified      Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  user          User     @relation(fields: [userId], references: [id])
+  brand         Brand?
+  products      Product[]
+  deposits      Deposit[]
+  sponsorships  Sponsorship[]
+  customPages   CustomProductPage[]
+}
+
+model Brand {
+  id            String   @id @default(cuid())
+  merchantId    String   @unique
+  name          String
+  logoUrl       String?
+  styleTags     String?  // JSON: ["minimalist","durable","eco","value"]
+  isChampion    Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  merchant      Merchant @relation(fields: [merchantId], references: [id])
+  products      Product[]
+  contentPosts  ContentPost[]
+  ambassadors   BrandAmbassador[]
+  sponsorships  Sponsorship[]
+}
+
+model BrandAmbassador {
+  id            String   @id @default(cuid())
+  brandId       String
+  userId        String
+  status        String   @default("active") // active, expired, revoked
+  disclosureText String  @default("Brand Ambassador")
+  createdAt     DateTime @default(now())
+
+  brand         Brand    @relation(fields: [brandId], references: [id])
+  user          User     @relation(fields: [userId], references: [id])
+}
+
+// ==================== PRODUCTS ====================
+
+model Product {
+  id              String   @id @default(cuid())
+  merchantId      String
+  brandId         String?
+  name            String
+  slug            String   @unique
+  description     String
+  price           Float
+  compareAtPrice  Float?
+  imageUrl        String
+  galleryUrls     String?  // JSON array
+  functionTags    String?  // JSON: ["leak-proof","non-stick","one-click"]
+  sceneTags       String?  // JSON: ["small-kitchen","rental","pet-family"]
+  riskTags        String?  // JSON: ["insufficient-data","size-note"]
+  stock           Int      @default(100)
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  merchant        Merchant @relation(fields: [merchantId], references: [id])
+  brand           Brand?   @relation(fields: [brandId], references: [id])
+  variants        ProductVariant[]
+  leagueStatuses  ProductLeagueStatus[]
+  orderItems      OrderItem[]
+  reviews         Review[]
+  votes           Vote[]
+  evidencePosts   EvidencePost[]
+  contentPosts    ContentPost[]
+  customPages     CustomProductPage[]
+  pkMatchesA      PkMatch[] @relation("ProductA")
+  pkMatchesB      PkMatch[] @relation("ProductB")
+}
+
+model ProductVariant {
+  id          String   @id @default(cuid())
+  productId   String
+  name        String   // e.g. "Color: Blue", "Size: Large"
+  price       Float
+  stock       Int      @default(50)
+  imageUrl    String?
+
+  product     Product  @relation(fields: [productId], references: [id])
+  orderItems  OrderItem[]
+}
+
+// ==================== LEAGUES & SEASONS ====================
+
+model League {
+  id          String   @id @default(cuid())
+  name        String   // e.g. "Kitchen Effortless", "Cleaning Power"
+  slug        String   @unique
+  description String
+  iconUrl     String?
+  painPoint   String   // The core pain point this league addresses
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  seasons     Season[]
+  productStatuses ProductLeagueStatus[]
+  challenges  Challenge[]
+  pkMatches   PkMatch[]
+  contentPosts ContentPost[]
+}
+
+model Season {
+  id          String   @id @default(cuid())
+  leagueId    String
+  name        String   // "2026 Spring Season"
+  startDate   DateTime
+  endDate     DateTime
+  isCurrent   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  league      League   @relation(fields: [leagueId], references: [id])
+  pkMatches   PkMatch[]
+}
+
+model ProductLeagueStatus {
+  id          String   @id @default(cuid())
+  productId   String
+  leagueId    String
+  div         Int      @default(3) // 1, 2, 3
+  rankScore   Float    @default(0)
+  hypeScore   Float    @default(0)
+  proofScore  Float    @default(0)
+  varStatus   String   @default("clear") // clear, under_review, verified, sanctioned
+  evidenceCount Int    @default(0)
+  returnRate  Float    @default(0)
+  complaintRate Float  @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  product     Product  @relation(fields: [productId], references: [id])
+  league      League   @relation(fields: [leagueId], references: [id])
+  varCases    VarCase[]
+
+  @@unique([productId, leagueId])
+}
+
+// ==================== ORDERS & TRANSACTIONS ====================
+
+model Order {
+  id            String   @id @default(cuid())
+  userId        String
+  status        String   @default("pending") // pending, paid, shipped, delivered, completed, cancelled
+  totalAmount   Float
+  commissionRate Float   @default(0.15) // 15%
+  commissionAmount Float @default(0)
+  shippingAddress String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user          User     @relation(fields: [userId], references: [id])
+  items         OrderItem[]
+  returns       Return[]
+  disputes      Dispute[]
+  creditsEarned CreditsLedger[]
+}
+
+model OrderItem {
+  id            String   @id @default(cuid())
+  orderId       String
+  productId     String
+  variantId     String?
+  quantity      Int
+  unitPrice     Float
+  totalPrice    Float
+
+  order         Order    @relation(fields: [orderId], references: [id])
+  product       Product  @relation(fields: [productId], references: [id])
+  variant       ProductVariant? @relation(fields: [variantId], references: [id])
+  review        Review?
+  evidencePosts EvidencePost[]
+}
+
+model Return {
+  id          String   @id @default(cuid())
+  orderId     String
+  reason      String
+  status      String   @default("requested") // requested, approved, rejected, completed
+  refundAmount Float?
+  createdAt   DateTime @default(now())
+
+  order       Order    @relation(fields: [orderId], references: [id])
+}
+
+model Dispute {
+  id          String   @id @default(cuid())
+  orderId     String
+  reason      String
+  description String
+  status      String   @default("open") // open, investigating, resolved, closed
+  resolution  String?
+  createdAt   DateTime @default(now())
+
+  order       Order    @relation(fields: [orderId], references: [id])
+}
+
+// ==================== DEPOSITS & SPONSORSHIPS ====================
+
+model Deposit {
+  id          String   @id @default(cuid())
+  merchantId  String
+  amount      Float
+  type        String   // initial, top_up, deduction, refund
+  reason      String?
+  balance     Float    // running balance after this transaction
+  createdAt   DateTime @default(now())
+
+  merchant    Merchant @relation(fields: [merchantId], references: [id])
+}
+
+model Sponsorship {
+  id          String   @id @default(cuid())
+  merchantId  String
+  brandId     String
+  type        String   // season_naming, topic_column, club_skin, display_slot, challenge_prize
+  name        String
+  amount      Float
+  startDate   DateTime
+  endDate     DateTime
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  merchant    Merchant @relation(fields: [merchantId], references: [id])
+  brand       Brand    @relation(fields: [brandId], references: [id])
+}
+
+// ==================== CREDITS ====================
+
+model CreditsLedger {
+  id          String   @id @default(cuid())
+  userId      String
+  orderId     String?
+  amount      Float    // positive = earned, negative = spent
+  type        String   // div_reward, purchase, refund, expired, admin_adjustment
+  description String
+  balance     Float    // running balance
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id])
+  order       Order?   @relation(fields: [orderId], references: [id])
+}
+
+// ==================== REVIEWS & VOTES & EVIDENCE ====================
+
+model Review {
+  id          String   @id @default(cuid())
+  userId      String
+  productId   String
+  orderItemId String   @unique
+  rating      Int      // 1-5
+  title       String?
+  content     String
+  weight      Float    @default(1.0) // purchase vote = 1.0x
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id])
+  product     Product  @relation(fields: [productId], references: [id])
+  orderItem   OrderItem @relation(fields: [orderItemId], references: [id])
+}
+
+model Vote {
+  id          String   @id @default(cuid())
+  userId      String
+  productId   String
+  type        String   // passerby (0.2x), interactive (0.5x), purchase (1.0x)
+  weight      Float
+  value       Int      @default(1) // +1 upvote, -1 downvote
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id])
+  product     Product  @relation(fields: [productId], references: [id])
+
+  @@unique([userId, productId, type])
+}
+
+model EvidencePost {
+  id              String   @id @default(cuid())
+  userId          String
+  productId       String
+  orderItemId     String
+  mediaType       String   // video, image, gallery
+  mediaUrl        String
+  coverUrl        String?
+  title           String
+  description     String
+  structuredTags  String?  // JSON: {"duration":"3months","scenario":"daily_cooking","verdict":"recommended"}
+  weight          Float    @default(2.0) // evidence vote = 2.0-3.0x
+  status          String   @default("pending") // pending, verified, rejected
+  createdAt       DateTime @default(now())
+
+  user            User     @relation(fields: [userId], references: [id])
+  product         Product  @relation(fields: [productId], references: [id])
+  orderItem       OrderItem @relation(fields: [orderItemId], references: [id])
+}
+
+// ==================== CONTENT SYSTEM ====================
+
+model ContentPost {
+  id              String   @id @default(cuid())
+  authorId        String
+  source          String   // user, brand
+  type            String   // short, long
+  title           String
+  description     String?
+  mediaUrl        String
+  coverUrl        String?
+  duration        Int?     // seconds
+  leagueId        String?
+  productId       String?
+  brandId         String?
+  tags            String?  // JSON array of tags
+  isEvidenceCandidate Boolean @default(false)
+  evidenceStatus  String?  // null, pending, approved, rejected
+  publishedAt     DateTime @default(now())
+  createdAt       DateTime @default(now())
+
+  author          User     @relation(fields: [authorId], references: [id])
+  league          League?  @relation(fields: [leagueId], references: [id])
+  product         Product? @relation(fields: [productId], references: [id])
+  brand           Brand?   @relation(fields: [brandId], references: [id])
+  metrics         ContentMetrics?
+  comments        ContentComment[]
+  challengeEntry  ChallengeEntry?
+}
+
+model ContentMetrics {
+  id              String   @id @default(cuid())
+  contentPostId   String   @unique
+  views           Int      @default(0)
+  watchTime       Int      @default(0) // total seconds
+  completionRate  Float    @default(0) // 0-1
+  likes           Int      @default(0)
+  saves           Int      @default(0)
+  shares          Int      @default(0)
+  updatedAt       DateTime @updatedAt
+
+  contentPost     ContentPost @relation(fields: [contentPostId], references: [id])
+}
+
+model ContentComment {
+  id            String   @id @default(cuid())
+  contentPostId String
+  userId        String
+  content       String
+  createdAt     DateTime @default(now())
+
+  contentPost   ContentPost @relation(fields: [contentPostId], references: [id])
+  user          User        @relation(fields: [userId], references: [id])
+}
+
+// ==================== VAR & MODERATION ====================
+
+model VarCase {
+  id                    String   @id @default(cuid())
+  productLeagueStatusId String
+  triggerReason         String   // high_return_rate, evidence_complaint_spike, repeated_defect_tags
+  description           String
+  status                String   @default("open") // open, investigating, resolved
+  verdict               String?  // passed, remediation, failed
+  merchantResponse      String?
+  penaltyDetails        String?  // JSON: {deposit_deducted, div_change, restricted}
+  createdAt             DateTime @default(now())
+  resolvedAt            DateTime?
+
+  productLeagueStatus   ProductLeagueStatus @relation(fields: [productLeagueStatusId], references: [id])
+}
+
+model ModerationLog {
+  id          String   @id @default(cuid())
+  entityType  String   // content, product, merchant, user
+  entityId    String
+  action      String   // approve, reject, warn, suspend, ban
+  reason      String
+  moderatorId String?
+  createdAt   DateTime @default(now())
+}
+
+// ==================== CHALLENGES & PK ====================
+
+model Challenge {
+  id          String   @id @default(cuid())
+  leagueId    String
+  hashtag     String   @unique
+  title       String
+  description String
+  sponsorId   String?
+  prizePool   Float    @default(0)
+  rules       String?
+  status      String   @default("active") // draft, active, ended
+  startDate   DateTime
+  endDate     DateTime
+  createdAt   DateTime @default(now())
+
+  league      League   @relation(fields: [leagueId], references: [id])
+  entries     ChallengeEntry[]
+}
+
+model ChallengeEntry {
+  id            String   @id @default(cuid())
+  challengeId   String
+  contentPostId String   @unique
+  userId        String
+  status        String   @default("submitted") // submitted, approved, featured, winner
+  createdAt     DateTime @default(now())
+
+  challenge     Challenge   @relation(fields: [challengeId], references: [id])
+  contentPost   ContentPost @relation(fields: [contentPostId], references: [id])
+  user          User        @relation(fields: [userId], references: [id])
+}
+
+model PkMatch {
+  id            String   @id @default(cuid())
+  leagueId      String
+  seasonId      String?
+  productAId    String
+  productBId    String
+  proofWinner   String?  // productAId or productBId
+  hypeWinner    String?  // productAId or productBId
+  statsSnapshot String?  // JSON: comparative stats at time of creation
+  status        String   @default("active") // active, concluded
+  createdAt     DateTime @default(now())
+
+  league        League   @relation(fields: [leagueId], references: [id])
+  season        Season?  @relation(fields: [seasonId], references: [id])
+  productA      Product  @relation("ProductA", fields: [productAId], references: [id])
+  productB      Product  @relation("ProductB", fields: [productBId], references: [id])
+}
+
+// ==================== CUSTOM PRODUCT PAGES (C-Level) ====================
+
+model CustomProductPage {
+  id          String   @id @default(cuid())
+  productId   String   @unique
+  merchantId  String
+  theme       String   @default("default") // default, dark, brand, minimal
+  layout      String   // JSON: page builder layout config
+  isPublished Boolean  @default(false)
+  claimTier   String   @default("L1") // L1 (soft), L2 (verifiable), L3 (high-risk)
+  reviewStatus String  @default("pending") // pending, approved, revision_needed, rejected
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  product     Product  @relation(fields: [productId], references: [id])
+  merchant    Merchant @relation(fields: [merchantId], references: [id])
+}
