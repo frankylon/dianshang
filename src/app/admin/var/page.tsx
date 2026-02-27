@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/db";
 import { ShieldAlert, CheckCircle, Clock, AlertTriangle, XCircle } from "lucide-react";
 
+export const dynamic = 'force-dynamic';
+
 export default async function AdminVarPage() {
   const varCases = await prisma.varCase.findMany({
     include: {

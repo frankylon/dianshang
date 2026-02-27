@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/db";
 import { ShortsPlayer } from "@/components/shorts-player";
 
+export const dynamic = 'force-dynamic';
+
 export default async function ShortsPage() {
   const shorts = await prisma.contentPost.findMany({
     where: { type: "short" },

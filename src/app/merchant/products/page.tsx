@@ -7,6 +7,8 @@ import {
 } from "@/lib/utils";
 import { Package, Plus, AlertTriangle, CheckCircle } from "lucide-react";
 
+export const dynamic = 'force-dynamic';
+
 const currentUserId = "merchant1";
 
 export default async function MerchantProducts() {

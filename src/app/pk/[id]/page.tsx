@@ -7,6 +7,8 @@ import { ContentCard } from "@/components/content-card";
 import Link from "next/link";
 import { formatPrice } from "@/lib/utils";
 
+export const dynamic = 'force-dynamic';
+
 export default async function PkPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const pk = await prisma.pkMatch.findUnique({

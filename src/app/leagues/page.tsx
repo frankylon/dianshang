@@ -4,6 +4,8 @@ import { Trophy, Crown, Star, Sparkles, Swords, ChevronRight } from "lucide-reac
 import { DivBadge } from "@/components/div-badge";
 import { ProductCard } from "@/components/product-card";
 
+export const dynamic = 'force-dynamic';
+
 export default async function LeaguesPage() {
   const leagues = await prisma.league.findMany({
     where: { isActive: true },

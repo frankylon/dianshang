@@ -15,6 +15,8 @@ import {
   TrendingUp,
 } from "lucide-react";
 
+export const dynamic = 'force-dynamic';
+
 export const metadata = {
   title: "Search Results - LeagueShop",
   description: "Find the best products for your pain point, ranked by real evidence.",

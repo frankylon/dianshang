@@ -2,6 +2,8 @@ import { prisma } from "@/lib/db";
 import Link from "next/link";
 import { Flame, Trophy, Calendar, DollarSign, Users, ChevronRight } from "lucide-react";
 
+export const dynamic = 'force-dynamic';
+
 export default async function ChallengesPage() {
   const challenges = await prisma.challenge.findMany({
     include: {

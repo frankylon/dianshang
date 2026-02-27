@@ -10,6 +10,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
+export const dynamic = 'force-dynamic';
+
 const currentUserId = "user1";
 
 export default async function AccountPage() {

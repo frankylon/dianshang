@@ -2,6 +2,8 @@ import { prisma } from "@/lib/db";
 import { FileText, Video, Eye, Heart, CheckCircle, XCircle, Clock } from "lucide-react";
 import { formatNumber } from "@/lib/utils";
 
+export const dynamic = 'force-dynamic';
+
 export default async function AdminContentPage() {
   const contentPosts = await prisma.contentPost.findMany({
     include: {

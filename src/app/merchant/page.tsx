@@ -9,6 +9,8 @@ import {
   TrendingUp,
 } from "lucide-react";
 
+export const dynamic = 'force-dynamic';
+
 const currentUserId = "merchant1";
 
 export default async function MerchantDashboard() {

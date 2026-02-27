@@ -2,6 +2,8 @@ import { prisma } from "@/lib/db";
 import { Coins, TrendingUp, TrendingDown, RefreshCw } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 
+export const dynamic = 'force-dynamic';
+
 export default async function AdminCreditsPage() {
   const ledgerEntries = await prisma.creditsLedger.findMany({
     include: {

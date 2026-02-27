@@ -2,6 +2,8 @@ import { prisma } from "@/lib/db";
 import { Store, CheckCircle, XCircle, Package, DollarSign } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 
+export const dynamic = 'force-dynamic';
+
 export default async function AdminMerchantsPage() {
   const merchants = await prisma.merchant.findMany({
     include: {

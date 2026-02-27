@@ -2,6 +2,8 @@ import { prisma } from "@/lib/db";
 import { formatPrice } from "@/lib/utils";
 import { Package } from "lucide-react";
 
+export const dynamic = 'force-dynamic';
+
 const currentUserId = "user1";
 
 export default async function OrdersPage() {

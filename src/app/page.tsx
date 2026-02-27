@@ -13,6 +13,8 @@ import {
   DollarSign,
 } from "lucide-react";
 
+export const dynamic = 'force-dynamic';
+
 async function getLeagues() {
   return prisma.league.findMany({
     where: { isActive: true },

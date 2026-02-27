@@ -3,6 +3,8 @@ import { ContentCard } from "@/components/content-card";
 import { Play, TrendingUp, Clock } from "lucide-react";
 import Link from "next/link";
 
+export const dynamic = 'force-dynamic';
+
 export default async function WatchPage() {
   const longVideos = await prisma.contentPost.findMany({
     where: { type: "long" },

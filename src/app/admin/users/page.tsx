@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/db";
 import { Users, ShieldCheck, Store, User } from "lucide-react";
 
+export const dynamic = 'force-dynamic';
+
 export default async function AdminUsersPage() {
   const users = await prisma.user.findMany({
     include: {

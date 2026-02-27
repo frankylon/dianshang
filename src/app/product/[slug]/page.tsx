@@ -25,6 +25,8 @@ import { ContentCard } from "@/components/content-card";
 import { DivBadge } from "@/components/div-badge";
 import { Tabs } from "@/components/tabs";
 
+export const dynamic = 'force-dynamic';
+
 export default async function ProductPage({
   params,
 }: {
