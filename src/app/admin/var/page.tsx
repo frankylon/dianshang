@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { ShieldAlert, CheckCircle, Clock, AlertTriangle, XCircle } from "lucide-react";
+import { VarVerdictButtons } from "@/components/admin-actions";
 
 export const dynamic = 'force-dynamic';
 
@@ -114,17 +115,7 @@ export default async function AdminVarPage() {
                 </td>
                 <td className="px-4 py-3 text-right">
                   {vc.status !== "resolved" ? (
-                    <div className="flex gap-2 justify-end">
-                      <button className="text-xs bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700">
-                        Pass
-                      </button>
-                      <button className="text-xs bg-yellow-600 text-white px-2 py-1 rounded hover:bg-yellow-700">
-                        Remediate
-                      </button>
-                      <button className="text-xs bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700">
-                        Fail
-                      </button>
-                    </div>
+                    <VarVerdictButtons caseId={vc.id} />
                   ) : (
                     <span className="text-xs text-gray-400">Closed</span>
                   )}

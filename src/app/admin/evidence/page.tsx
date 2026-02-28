@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { Camera, CheckCircle, Clock, XCircle } from "lucide-react";
+import { EvidenceActionButtons } from "@/components/admin-actions";
 
 export const dynamic = 'force-dynamic';
 
@@ -96,14 +97,7 @@ export default async function AdminEvidencePage() {
                 </td>
                 <td className="px-4 py-3 text-right">
                   {ep.status === "pending" ? (
-                    <div className="flex gap-1 justify-end">
-                      <button className="text-xs bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700">
-                        Verify
-                      </button>
-                      <button className="text-xs bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700">
-                        Reject
-                      </button>
-                    </div>
+                    <EvidenceActionButtons evidenceId={ep.id} />
                   ) : (
                     <button className="text-xs text-gray-500 hover:underline">View</button>
                   )}

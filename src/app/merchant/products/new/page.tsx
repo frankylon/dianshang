@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { FileUpload } from "@/components/file-upload";
 
 interface League {
   id: string;
@@ -152,14 +153,11 @@ export default function NewProductPage() {
           </div>
 
           <div className="col-span-2">
-            <label className="block text-sm font-medium mb-1">Image URL *</label>
-            <input
-              type="text"
+            <FileUpload
+              label="Product Image *"
               value={form.imageUrl}
-              onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
-              required
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="/products/my-product.jpg or https://..."
+              onChange={(url) => setForm({ ...form, imageUrl: url })}
+              accept="image"
             />
           </div>
 

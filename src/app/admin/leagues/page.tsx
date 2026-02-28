@@ -23,10 +23,10 @@ export default async function AdminLeaguesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-900">League Management</h2>
-        <button className="flex items-center gap-2 bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors">
+        <Link href="/admin/leagues/new" className="flex items-center gap-2 bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors">
           <Plus className="h-4 w-4" />
           Create League
-        </button>
+        </Link>
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">

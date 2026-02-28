@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
+import { FileUpload } from "@/components/file-upload";
 
 interface League { id: string; name: string; }
 interface Product { id: string; name: string; }
@@ -95,19 +96,19 @@ export default function NewContentPage() {
             placeholder="Brief description..." />
         </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-1">Media URL *</label>
-          <input type="text" value={form.mediaUrl} onChange={e => setForm({ ...form, mediaUrl: e.target.value })} required
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="/content/my-video.mp4 or https://..." />
-        </div>
+        <FileUpload
+          label="Media File *"
+          value={form.mediaUrl}
+          onChange={(url) => setForm({ ...form, mediaUrl: url })}
+          accept="video"
+        />
 
-        <div>
-          <label className="block text-sm font-medium mb-1">Cover Image URL</label>
-          <input type="text" value={form.coverUrl} onChange={e => setForm({ ...form, coverUrl: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="/content/cover.jpg" />
-        </div>
+        <FileUpload
+          label="Cover Image"
+          value={form.coverUrl}
+          onChange={(url) => setForm({ ...form, coverUrl: url })}
+          accept="image"
+        />
 
         <div className="grid grid-cols-2 gap-4">
           <div>

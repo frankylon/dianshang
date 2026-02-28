@@ -1,10 +1,16 @@
 import { prisma } from "@/lib/db";
+import { getSession } from "@/lib/auth";
+import { redirect } from "next/navigation";
 import { Store, CheckCircle, XCircle, Package, DollarSign } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
+import { MerchantVerifyButton } from "@/components/admin-actions";
 
 export const dynamic = 'force-dynamic';
 
 export default async function AdminMerchantsPage() {
+  const session = await getSession();
+  if (!session || session.role !== "admin") redirect("/login");
+
   const merchants = await prisma.merchant.findMany({
     include: {
       user: true,
@@ -108,9 +114,7 @@ export default async function AdminMerchantsPage() {
                   <td className="px-4 py-3 text-right">
                     <div className="flex gap-2 justify-end">
                       {!merchant.verified && (
-                        <button className="text-xs bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700">
-                          Verify
-                        </button>
+                        <MerchantVerifyButton merchantId={merchant.id} />
                       )}
                       <button className="text-xs text-blue-600 hover:underline">View</button>
                     </div>

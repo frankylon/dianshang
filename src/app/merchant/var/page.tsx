@@ -10,6 +10,7 @@ import {
   XCircle,
   MessageSquare,
 } from "lucide-react";
+import { MerchantVarResponseButton } from "@/components/merchant-var-form";
 
 export const dynamic = 'force-dynamic';
 
@@ -231,10 +232,7 @@ export default async function MerchantVar() {
                       </td>
                       <td className="px-6 py-4">
                         {isOpen ? (
-                          <button className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
-                            <MessageSquare className="w-3.5 h-3.5" />
-                            Submit Response
-                          </button>
+                          <MerchantVarResponseButton caseId={varCase.id} />
                         ) : (
                           <span className="text-xs text-gray-400">
                             {varCase.resolvedAt

@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { Users, ShieldCheck, Store, User } from "lucide-react";
+import { UserRoleEditor } from "@/components/admin-actions";
 
 export const dynamic = 'force-dynamic';
 
@@ -111,7 +112,7 @@ export default async function AdminUsersPage() {
                   {new Date(user.createdAt).toLocaleDateString()}
                 </td>
                 <td className="px-4 py-3 text-right">
-                  <button className="text-xs text-blue-600 hover:underline">Edit</button>
+                  <UserRoleEditor userId={user.id} currentRole={user.role} />
                 </td>
               </tr>
             ))}

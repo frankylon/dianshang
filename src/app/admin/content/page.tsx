@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { FileText, Video, Eye, Heart, CheckCircle, XCircle, Clock } from "lucide-react";
 import { formatNumber } from "@/lib/utils";
+import { ContentActionButtons } from "@/components/admin-actions";
 
 export const dynamic = 'force-dynamic';
 
@@ -111,14 +112,7 @@ export default async function AdminContentPage() {
                 <td className="px-4 py-3 text-right">
                   <div className="flex gap-1 justify-end">
                     {post.isEvidenceCandidate && post.evidenceStatus === "pending" && (
-                      <>
-                        <button className="text-xs bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700">
-                          Approve
-                        </button>
-                        <button className="text-xs bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700">
-                          Reject
-                        </button>
-                      </>
+                      <ContentActionButtons postId={post.id} />
                     )}
                     <button className="text-xs text-gray-500 hover:underline px-2 py-1">View</button>
                   </div>
