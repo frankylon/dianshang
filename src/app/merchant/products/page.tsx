@@ -1,4 +1,7 @@
 import { prisma } from "@/lib/db";
+import { getSession } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import Link from "next/link";
 import {
   formatPrice,
   getDivLabel,
@@ -9,11 +12,17 @@ import { Package, Plus, AlertTriangle, CheckCircle } from "lucide-react";
 
 export const dynamic = 'force-dynamic';
 
-const currentUserId = "merchant1";
-
 export default async function MerchantProducts() {
+  const session = await getSession();
+  if (!session) {
+    redirect("/login");
+  }
+  if (session.role !== "merchant" && session.role !== "admin") {
+    redirect("/");
+  }
+
   const merchant = await prisma.merchant.findUnique({
-    where: { userId: currentUserId },
+    where: { userId: session.id },
     include: { brand: true },
   });
 
@@ -51,10 +60,13 @@ export default async function MerchantProducts() {
             Manage your product catalog ({products.length} total)
           </p>
         </div>
-        <button className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
+        <Link
+          href="/merchant/products/new"
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+        >
           <Plus className="w-4 h-4" />
           Add Product
-        </button>
+        </Link>
       </div>
 
       {/* Products Table */}

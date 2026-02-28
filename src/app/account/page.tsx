@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { getSession } from "@/lib/auth";
 import { formatPrice } from "@/lib/utils";
 import {
   User,
@@ -9,14 +10,18 @@ import {
   Package,
 } from "lucide-react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 
 export const dynamic = 'force-dynamic';
 
-const currentUserId = "user1";
-
 export default async function AccountPage() {
+  const session = await getSession();
+  if (!session) {
+    redirect("/login");
+  }
+
   const user = await prisma.user.findUniqueOrThrow({
-    where: { id: currentUserId },
+    where: { id: session.id },
     include: {
       badges: { orderBy: { earnedAt: "desc" } },
       orders: {
@@ -35,7 +40,7 @@ export default async function AccountPage() {
   });
 
   const totalOrders = await prisma.order.count({
-    where: { userId: currentUserId },
+    where: { userId: session.id },
   });
 
   const creditsBalance = user.creditsLedger.reduce(

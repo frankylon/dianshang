@@ -1,9 +1,13 @@
 import { prisma } from "@/lib/db";
+import { getSession } from "@/lib/auth";
+import { redirect } from "next/navigation";
 import { Users, ShieldCheck, Store, User } from "lucide-react";
 
 export const dynamic = 'force-dynamic';
 
 export default async function AdminUsersPage() {
+  const session = await getSession();
+  if (!session || session.role !== "admin") redirect("/login");
   const users = await prisma.user.findMany({
     include: {
       merchant: true,

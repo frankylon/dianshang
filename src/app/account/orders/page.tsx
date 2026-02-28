@@ -1,14 +1,19 @@
 import { prisma } from "@/lib/db";
+import { getSession } from "@/lib/auth";
 import { formatPrice } from "@/lib/utils";
 import { Package } from "lucide-react";
+import { redirect } from "next/navigation";
 
 export const dynamic = 'force-dynamic';
 
-const currentUserId = "user1";
-
 export default async function OrdersPage() {
+  const session = await getSession();
+  if (!session) {
+    redirect("/login");
+  }
+
   const orders = await prisma.order.findMany({
-    where: { userId: currentUserId },
+    where: { userId: session.id },
     orderBy: { createdAt: "desc" },
     include: {
       items: {

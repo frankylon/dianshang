@@ -1,10 +1,14 @@
 import { prisma } from "@/lib/db";
+import { getSession } from "@/lib/auth";
+import { redirect } from "next/navigation";
 import { Coins, TrendingUp, TrendingDown, RefreshCw } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 
 export const dynamic = 'force-dynamic';
 
 export default async function AdminCreditsPage() {
+  const session = await getSession();
+  if (!session || session.role !== "admin") redirect("/login");
   const ledgerEntries = await prisma.creditsLedger.findMany({
     include: {
       user: true,

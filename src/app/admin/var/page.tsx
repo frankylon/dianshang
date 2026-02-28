@@ -1,9 +1,13 @@
 import { prisma } from "@/lib/db";
+import { getSession } from "@/lib/auth";
+import { redirect } from "next/navigation";
 import { ShieldAlert, CheckCircle, Clock, AlertTriangle, XCircle } from "lucide-react";
 
 export const dynamic = 'force-dynamic';
 
 export default async function AdminVarPage() {
+  const session = await getSession();
+  if (!session || session.role !== "admin") redirect("/login");
   const varCases = await prisma.varCase.findMany({
     include: {
       productLeagueStatus: {

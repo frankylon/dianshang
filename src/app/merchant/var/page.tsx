@@ -1,4 +1,6 @@
 import { prisma } from "@/lib/db";
+import { getSession } from "@/lib/auth";
+import { redirect } from "next/navigation";
 import {
   Shield,
   AlertTriangle,
@@ -11,11 +13,17 @@ import {
 
 export const dynamic = 'force-dynamic';
 
-const currentUserId = "merchant1";
-
 export default async function MerchantVar() {
+  const session = await getSession();
+  if (!session) {
+    redirect("/login");
+  }
+  if (session.role !== "merchant" && session.role !== "admin") {
+    redirect("/");
+  }
+
   const merchant = await prisma.merchant.findUnique({
-    where: { userId: currentUserId },
+    where: { userId: session.id },
     include: { brand: true },
   });
 

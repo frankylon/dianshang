@@ -1,9 +1,14 @@
 import { prisma } from "@/lib/db";
+import { getSession } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import Link from "next/link";
 import { Trophy, Plus, Users, Package } from "lucide-react";
 
 export const dynamic = 'force-dynamic';
 
 export default async function AdminLeaguesPage() {
+  const session = await getSession();
+  if (!session || session.role !== "admin") redirect("/login");
   const leagues = await prisma.league.findMany({
     include: {
       productStatuses: true,

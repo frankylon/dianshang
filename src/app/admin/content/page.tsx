@@ -1,10 +1,14 @@
 import { prisma } from "@/lib/db";
+import { getSession } from "@/lib/auth";
+import { redirect } from "next/navigation";
 import { FileText, Video, Eye, Heart, CheckCircle, XCircle, Clock } from "lucide-react";
 import { formatNumber } from "@/lib/utils";
 
 export const dynamic = 'force-dynamic';
 
 export default async function AdminContentPage() {
+  const session = await getSession();
+  if (!session || session.role !== "admin") redirect("/login");
   const contentPosts = await prisma.contentPost.findMany({
     include: {
       author: true,

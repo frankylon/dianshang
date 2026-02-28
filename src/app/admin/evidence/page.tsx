@@ -1,9 +1,13 @@
 import { prisma } from "@/lib/db";
+import { getSession } from "@/lib/auth";
+import { redirect } from "next/navigation";
 import { Camera, CheckCircle, Clock, XCircle } from "lucide-react";
 
 export const dynamic = 'force-dynamic';
 
 export default async function AdminEvidencePage() {
+  const session = await getSession();
+  if (!session || session.role !== "admin") redirect("/login");
   const evidencePosts = await prisma.evidencePost.findMany({
     include: {
       user: true,

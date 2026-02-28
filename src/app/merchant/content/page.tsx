@@ -1,4 +1,7 @@
 import { prisma } from "@/lib/db";
+import { getSession } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import Link from "next/link";
 import { formatNumber } from "@/lib/utils";
 import {
   FileText,
@@ -12,11 +15,17 @@ import {
 
 export const dynamic = 'force-dynamic';
 
-const currentUserId = "merchant1";
-
 export default async function MerchantContent() {
+  const session = await getSession();
+  if (!session) {
+    redirect("/login");
+  }
+  if (session.role !== "merchant" && session.role !== "admin") {
+    redirect("/");
+  }
+
   const merchant = await prisma.merchant.findUnique({
-    where: { userId: currentUserId },
+    where: { userId: session.id },
     include: { brand: true },
   });
 
@@ -36,7 +45,7 @@ export default async function MerchantContent() {
   }
 
   const contentPosts = await prisma.contentPost.findMany({
-    where: { authorId: currentUserId },
+    where: { authorId: session.id },
     include: {
       metrics: true,
       product: true,
@@ -55,10 +64,13 @@ export default async function MerchantContent() {
             Manage your content posts ({contentPosts.length} total)
           </p>
         </div>
-        <button className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
+        <Link
+          href="/merchant/content/new"
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+        >
           <Plus className="w-4 h-4" />
           Create Content
-        </button>
+        </Link>
       </div>
 
       {/* Content Grid */}
