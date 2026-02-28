@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/db";
 import { getSession } from "@/lib/auth";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import {
   Layers,
   Plus,
@@ -108,10 +109,10 @@ export default async function MerchantPages() {
             Manage custom product pages ({customPages.length} total)
           </p>
         </div>
-        <button className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
+        <Link href="/merchant/pages/new" className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors">
           <Plus className="w-4 h-4" />
           Create Custom Page
-        </button>
+        </Link>
       </div>
 
       {/* Info banner */}

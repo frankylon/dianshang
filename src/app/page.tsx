@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { ContentCard, ShortsCard } from "@/components/content-card";
-import { formatNumber } from "@/lib/utils";
+import { formatNumber, formatPrice } from "@/lib/utils";
+import { DivBadge } from "@/components/div-badge";
 import {
   Search,
   Trophy,
@@ -11,6 +12,9 @@ import {
   Zap,
   Calendar,
   DollarSign,
+  Package,
+  Star,
+  ShieldCheck,
 } from "lucide-react";
 
 export const dynamic = 'force-dynamic';
@@ -41,6 +45,23 @@ async function getLongVideos() {
     take: 8,
     include: {
       metrics: true,
+    },
+  });
+}
+
+async function getFeaturedProducts() {
+  return prisma.product.findMany({
+    where: { isActive: true },
+    orderBy: { createdAt: "desc" },
+    take: 12,
+    include: {
+      brand: true,
+      leagueStatuses: {
+        include: { league: true },
+        take: 1,
+      },
+      reviews: { select: { rating: true } },
+      _count: { select: { evidencePosts: true, reviews: true } },
     },
   });
 }
@@ -102,11 +123,12 @@ function daysUntil(date: Date): number {
 }
 
 export default async function Home() {
-  const [leagues, shorts, longVideos, challenges] = await Promise.all([
+  const [leagues, shorts, longVideos, challenges, products] = await Promise.all([
     getLeagues(),
     getShorts(),
     getLongVideos(),
     getChallenges(),
+    getFeaturedProducts(),
   ]);
 
   return (
@@ -183,6 +205,127 @@ export default async function Home() {
                 </p>
               </Link>
             ))}
+          </div>
+        </section>
+      )}
+
+      {/* Product Recommendations */}
+      {products.length > 0 && (
+        <section className="max-w-6xl mx-auto px-4 py-14">
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-2">
+              <Package className="w-5 h-5 text-accent" />
+              <h2 className="text-2xl font-semibold text-foreground">
+                Featured Products
+              </h2>
+            </div>
+            <Link
+              href="/search"
+              className="text-sm text-accent hover:text-accent-hover font-medium flex items-center gap-1"
+            >
+              View all <ChevronRight className="w-4 h-4" />
+            </Link>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            {products.map((product) => {
+              const ls = product.leagueStatuses[0];
+              const avgRating =
+                product.reviews.length > 0
+                  ? product.reviews.reduce((s, r) => s + r.rating, 0) /
+                    product.reviews.length
+                  : 0;
+
+              return (
+                <Link
+                  key={product.id}
+                  href={`/product/${product.slug}`}
+                  className="bg-card border border-border rounded-xl overflow-hidden hover:shadow-md hover:border-accent/30 transition-all group"
+                >
+                  {/* Product Image */}
+                  <div className="aspect-square bg-gray-100 relative overflow-hidden">
+                    {product.imageUrl ? (
+                      <img
+                        src={product.imageUrl}
+                        alt={product.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-muted">
+                        <Package className="w-8 h-8" />
+                      </div>
+                    )}
+                    {/* Division badge overlay */}
+                    {ls && (
+                      <div className="absolute top-2 left-2">
+                        <DivBadge div={ls.div} size="sm" />
+                      </div>
+                    )}
+                    {/* Compare price discount */}
+                    {product.compareAtPrice &&
+                      product.compareAtPrice > product.price && (
+                        <span className="absolute top-2 right-2 bg-danger text-white text-[10px] font-bold px-1.5 py-0.5 rounded">
+                          -
+                          {Math.round(
+                            (1 - product.price / product.compareAtPrice) * 100
+                          )}
+                          %
+                        </span>
+                      )}
+                  </div>
+
+                  {/* Product Info */}
+                  <div className="p-3 space-y-1.5">
+                    {product.brand && (
+                      <p className="text-[10px] text-muted uppercase tracking-wider font-medium">
+                        {product.brand.name}
+                      </p>
+                    )}
+                    <h3 className="text-sm font-medium text-foreground line-clamp-2 leading-snug group-hover:text-accent transition-colors">
+                      {product.name}
+                    </h3>
+
+                    {/* Price */}
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-base font-bold text-foreground">
+                        {formatPrice(product.price)}
+                      </span>
+                      {product.compareAtPrice &&
+                        product.compareAtPrice > product.price && (
+                          <span className="text-xs text-muted line-through">
+                            {formatPrice(product.compareAtPrice)}
+                          </span>
+                        )}
+                    </div>
+
+                    {/* Rating + Evidence */}
+                    <div className="flex items-center gap-2 text-xs text-muted">
+                      {avgRating > 0 && (
+                        <span className="flex items-center gap-0.5">
+                          <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                          {avgRating.toFixed(1)}
+                          <span className="text-gray-400">
+                            ({product._count.reviews})
+                          </span>
+                        </span>
+                      )}
+                      {product._count.evidencePosts > 0 && (
+                        <span className="flex items-center gap-0.5">
+                          <ShieldCheck className="w-3 h-3 text-success" />
+                          {product._count.evidencePosts} evidence
+                        </span>
+                      )}
+                    </div>
+
+                    {/* League info */}
+                    {ls && (
+                      <p className="text-[10px] text-muted">
+                        {ls.league.name}
+                      </p>
+                    )}
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         </section>
       )}

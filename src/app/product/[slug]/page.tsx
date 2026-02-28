@@ -16,6 +16,7 @@ import {
   Headphones,
   ArrowRight,
   Package,
+  Store,
 } from "lucide-react";
 
 import { prisma } from "@/lib/db";
@@ -24,6 +25,7 @@ import { RefereePanel } from "@/components/referee-panel";
 import { ContentCard } from "@/components/content-card";
 import { DivBadge } from "@/components/div-badge";
 import { Tabs } from "@/components/tabs";
+import { CustomPageRenderer } from "@/components/custom-page-renderer";
 
 export const dynamic = 'force-dynamic';
 
@@ -53,19 +55,16 @@ export default async function ProductPage({
       contentPosts: {
         include: { metrics: true, author: true },
       },
-      customPages: true,
+      customPages: {
+        where: { isPublished: true, reviewStatus: "approved" },
+        take: 1,
+      },
     },
   });
 
   if (!product) {
     notFound();
   }
-
-  // Related content: ContentPosts associated with this product
-  const relatedContent = await prisma.contentPost.findMany({
-    where: { productId: product.id },
-    include: { metrics: true },
-  });
 
   // Derive data
   const leagueStatus = product.leagueStatuses[0] ?? null;
@@ -78,7 +77,25 @@ export default async function ProductPage({
   const userContentPosts = product.contentPosts.filter(
     (p) => p.source === "user"
   );
-  const hasSponsor = false; // Could be derived from sponsorships if needed
+  const hasSponsor = false;
+  const customPage = product.customPages[0] ?? null;
+
+  // Average rating
+  const avgRating =
+    product.reviews.length > 0
+      ? product.reviews.reduce((s, r) => s + r.rating, 0) /
+        product.reviews.length
+      : 0;
+
+  // Parse custom page layout
+  let customLayout: { sections: Array<{ type: string; config: Record<string, string | number | boolean> }> } | null = null;
+  if (customPage) {
+    try {
+      customLayout = JSON.parse(customPage.layout);
+    } catch {
+      customLayout = null;
+    }
+  }
 
   // Media type icon helper
   function MediaTypeIcon({ type }: { type: string }) {
@@ -136,7 +153,6 @@ export default async function ProductPage({
 
   const overviewContent = (
     <div className="space-y-6">
-      {/* Description */}
       <div>
         <h3 className="text-sm font-semibold text-foreground mb-2">
           Description
@@ -146,7 +162,6 @@ export default async function ProductPage({
         </p>
       </div>
 
-      {/* Full Referee Panel */}
       {leagueStatus && (
         <RefereePanel
           leagueStatus={{
@@ -163,7 +178,6 @@ export default async function ProductPage({
         />
       )}
 
-      {/* Feature Tags Grid */}
       {(functionTags.length > 0 ||
         sceneTags.length > 0 ||
         riskTags.length > 0) && (
@@ -283,7 +297,6 @@ export default async function ProductPage({
 
   const evidenceContent = (
     <div className="space-y-4">
-      {/* Evidence Wall Header */}
       <div className="flex items-center gap-2 bg-gray-50 border border-border rounded-lg p-3">
         <Lock className="w-4 h-4 text-muted" />
         <span className="text-sm font-semibold text-foreground">
@@ -320,7 +333,6 @@ export default async function ProductPage({
                 key={evidence.id}
                 className="bg-card border border-border rounded-xl p-4 space-y-3"
               >
-                {/* Top row: title, media type, weight, status */}
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-2 min-w-0">
                     <MediaTypeIcon type={evidence.mediaType} />
@@ -334,7 +346,6 @@ export default async function ProductPage({
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    {/* Weight badge */}
                     <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200 font-medium">
                       <Weight className="w-3 h-3" />
                       {evidence.weight.toFixed(1)}x
@@ -342,13 +353,9 @@ export default async function ProductPage({
                     <StatusBadge status={evidence.status} />
                   </div>
                 </div>
-
-                {/* Description */}
                 <p className="text-sm text-muted leading-relaxed">
                   {evidence.description}
                 </p>
-
-                {/* Structured tags */}
                 {Object.keys(tags).length > 0 && (
                   <div className="flex flex-wrap gap-1.5">
                     {Object.entries(tags).map(([key, value]) => (
@@ -385,7 +392,6 @@ export default async function ProductPage({
               key={review.id}
               className="bg-card border border-border rounded-xl p-4 space-y-2"
             >
-              {/* Header: stars, user, weight */}
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <StarRating rating={review.rating} />
@@ -398,15 +404,11 @@ export default async function ProductPage({
                   {review.weight.toFixed(1)}x weight
                 </span>
               </div>
-
-              {/* Title */}
               {review.title && (
                 <h4 className="text-sm font-semibold text-foreground">
                   {review.title}
                 </h4>
               )}
-
-              {/* Content */}
               <p className="text-sm text-muted leading-relaxed">
                 {review.content}
               </p>
@@ -422,111 +424,284 @@ export default async function ProductPage({
   /* ------------------------------------------------------------------ */
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
+    <div className="min-h-screen">
       {/* ============================================================= */}
-      {/* HERO SECTION                                                   */}
+      {/* STICKY TOP BAR: Product Info + Cart + Rankings                 */}
+      {/* This section stays locked at the top                          */}
       {/* ============================================================= */}
-      <section className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* Image placeholder */}
-        <div className="aspect-square bg-gray-100 rounded-2xl border border-border flex items-center justify-center">
-          <span className="text-muted text-sm">Product Image</span>
+      <div className="sticky top-14 z-40 bg-card border-b border-border shadow-sm">
+        <div className="max-w-5xl mx-auto px-4 py-4">
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_2fr_auto] gap-4 items-center">
+            {/* Product image + basic info */}
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 rounded-xl bg-gray-100 border border-border flex-shrink-0 overflow-hidden">
+                {product.imageUrl ? (
+                  <img
+                    src={product.imageUrl}
+                    alt={product.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <Package className="w-6 h-6 text-muted" />
+                  </div>
+                )}
+              </div>
+              <div className="min-w-0">
+                {product.brand && (
+                  <p className="text-[10px] text-muted uppercase tracking-wider font-medium">
+                    {product.brand.name}
+                  </p>
+                )}
+                <h1 className="text-sm font-bold text-foreground truncate">
+                  {product.name}
+                </h1>
+                <div className="flex items-baseline gap-2 mt-0.5">
+                  <span className="text-lg font-bold text-foreground">
+                    {formatPrice(product.price)}
+                  </span>
+                  {product.compareAtPrice &&
+                    product.compareAtPrice > product.price && (
+                      <span className="text-xs text-muted line-through">
+                        {formatPrice(product.compareAtPrice)}
+                      </span>
+                    )}
+                </div>
+              </div>
+            </div>
+
+            {/* League ranking + VAR data */}
+            <div className="flex items-center gap-3 overflow-x-auto">
+              {leagueStatus && (
+                <>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <DivBadge div={leagueStatus.div} size="sm" />
+                    <span className="text-xs text-muted">
+                      {leagueStatus.league.name}
+                    </span>
+                  </div>
+                  <div className="h-6 w-px bg-border shrink-0" />
+                  <div className="flex items-center gap-3 text-xs shrink-0">
+                    <span className="text-muted">
+                      Rank{" "}
+                      <span className="font-bold text-foreground">
+                        {leagueStatus.rankScore.toFixed(0)}
+                      </span>
+                    </span>
+                    <span className="text-hype">
+                      Hype{" "}
+                      <span className="font-bold">
+                        {leagueStatus.hypeScore.toFixed(0)}
+                      </span>
+                    </span>
+                    <span className="text-proof">
+                      Proof{" "}
+                      <span className="font-bold">
+                        {leagueStatus.proofScore.toFixed(0)}
+                      </span>
+                    </span>
+                    <span className="text-muted">
+                      Evidence{" "}
+                      <span className="font-bold text-foreground">
+                        {leagueStatus.evidenceCount}
+                      </span>
+                    </span>
+                  </div>
+                  <div className="h-6 w-px bg-border shrink-0" />
+                  <span
+                    className={`text-xs px-1.5 py-0.5 rounded-full font-medium shrink-0 ${
+                      leagueStatus.varStatus === "clear"
+                        ? "bg-green-100 text-green-700"
+                        : leagueStatus.varStatus === "under_review"
+                        ? "bg-yellow-100 text-yellow-700"
+                        : "bg-red-100 text-red-700"
+                    }`}
+                  >
+                    VAR: {leagueStatus.varStatus.replace(/_/g, " ")}
+                  </span>
+                </>
+              )}
+              {avgRating > 0 && (
+                <>
+                  <div className="h-6 w-px bg-border shrink-0" />
+                  <span className="flex items-center gap-1 text-xs shrink-0">
+                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                    <span className="font-bold text-foreground">
+                      {avgRating.toFixed(1)}
+                    </span>
+                    <span className="text-muted">
+                      ({product.reviews.length})
+                    </span>
+                  </span>
+                </>
+              )}
+            </div>
+
+            {/* Add to Cart button */}
+            <button className="flex items-center justify-center gap-2 bg-accent hover:bg-accent-hover text-white font-medium py-2.5 px-6 rounded-xl transition-colors text-sm whitespace-nowrap shrink-0">
+              <ShoppingCart className="w-4 h-4" />
+              Add to Cart
+            </button>
+          </div>
         </div>
+      </div>
 
-        {/* Product info */}
-        <div className="flex flex-col gap-4">
-          {/* Brand */}
-          {product.brand && (
-            <span className="text-xs text-muted uppercase tracking-wider font-medium">
-              {product.brand.name}
-            </span>
-          )}
-
-          {/* Name */}
-          <h1 className="text-2xl font-bold text-foreground leading-tight">
-            {product.name}
-          </h1>
-
-          {/* Price */}
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-foreground">
-              {formatPrice(product.price)}
-            </span>
-            {product.compareAtPrice && product.compareAtPrice > product.price && (
-              <span className="text-sm text-muted line-through">
-                {formatPrice(product.compareAtPrice)}
-              </span>
+      {/* ============================================================= */}
+      {/* MAIN HERO: Large product image + details                      */}
+      {/* ============================================================= */}
+      <section className="max-w-5xl mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {/* Product Image */}
+          <div className="aspect-square bg-gray-100 rounded-2xl border border-border overflow-hidden">
+            {product.imageUrl ? (
+              <img
+                src={product.imageUrl}
+                alt={product.name}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-muted">
+                <Package className="w-12 h-12" />
+              </div>
             )}
           </div>
 
-          {/* Scene / Function Tags */}
-          {(sceneTags.length > 0 || functionTags.length > 0) && (
-            <div className="flex flex-wrap gap-1.5">
-              {sceneTags.map((tag) => (
-                <span
-                  key={tag}
-                  className="text-xs px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100"
-                >
-                  {tag}
-                </span>
-              ))}
-              {functionTags.map((tag) => (
-                <span
-                  key={tag}
-                  className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100"
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-          )}
-
-          {/* League / Division info */}
-          {leagueStatus && (
-            <div className="flex items-center gap-2 text-xs text-muted">
-              <span>League:</span>
-              <span className="font-medium text-foreground">
-                {leagueStatus.league.name}
+          {/* Product Info */}
+          <div className="flex flex-col gap-4">
+            {product.brand && (
+              <span className="text-xs text-muted uppercase tracking-wider font-medium">
+                {product.brand.name}
               </span>
-              <DivBadge div={leagueStatus.div} size="sm" />
+            )}
+
+            <h2 className="text-2xl font-bold text-foreground leading-tight">
+              {product.name}
+            </h2>
+
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-bold text-foreground">
+                {formatPrice(product.price)}
+              </span>
+              {product.compareAtPrice &&
+                product.compareAtPrice > product.price && (
+                  <span className="text-sm text-muted line-through">
+                    {formatPrice(product.compareAtPrice)}
+                  </span>
+                )}
             </div>
-          )}
 
-          {/* ======================================================= */}
-          {/* COMPACT REFEREE PANEL -- MUST be on first screen         */}
-          {/* ======================================================= */}
-          {leagueStatus && (
-            <RefereePanel
-              leagueStatus={{
-                div: leagueStatus.div,
-                rankScore: leagueStatus.rankScore,
-                hypeScore: leagueStatus.hypeScore,
-                proofScore: leagueStatus.proofScore,
-                evidenceCount: leagueStatus.evidenceCount,
-                returnRate: leagueStatus.returnRate,
-                complaintRate: leagueStatus.complaintRate,
-                varStatus: leagueStatus.varStatus,
-              }}
-              hasSponsor={hasSponsor}
-              compact
-            />
-          )}
+            {/* Tags */}
+            {(sceneTags.length > 0 || functionTags.length > 0) && (
+              <div className="flex flex-wrap gap-1.5">
+                {sceneTags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="text-xs px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100"
+                  >
+                    {tag}
+                  </span>
+                ))}
+                {functionTags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-100"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
 
-          {/* Add to Cart */}
-          <button className="mt-auto flex items-center justify-center gap-2 bg-accent text-white font-medium py-3 px-6 rounded-xl hover:bg-accent/90 transition-colors">
-            <ShoppingCart className="w-5 h-5" />
-            Add to Cart
-          </button>
+            {/* League + Division */}
+            {leagueStatus && (
+              <div className="flex items-center gap-2 text-xs text-muted">
+                <span>League:</span>
+                <span className="font-medium text-foreground">
+                  {leagueStatus.league.name}
+                </span>
+                <DivBadge div={leagueStatus.div} size="sm" />
+              </div>
+            )}
+
+            {/* Compact Referee Panel */}
+            {leagueStatus && (
+              <RefereePanel
+                leagueStatus={{
+                  div: leagueStatus.div,
+                  rankScore: leagueStatus.rankScore,
+                  hypeScore: leagueStatus.hypeScore,
+                  proofScore: leagueStatus.proofScore,
+                  evidenceCount: leagueStatus.evidenceCount,
+                  returnRate: leagueStatus.returnRate,
+                  complaintRate: leagueStatus.complaintRate,
+                  varStatus: leagueStatus.varStatus,
+                }}
+                hasSponsor={hasSponsor}
+                compact
+              />
+            )}
+
+            <p className="text-sm text-muted leading-relaxed line-clamp-3">
+              {product.description}
+            </p>
+
+            {/* Merchant info */}
+            <div className="flex items-center gap-2 text-xs text-muted mt-auto pt-2 border-t border-border">
+              <Store className="w-3.5 h-3.5" />
+              <span>
+                Sold by{" "}
+                <span className="font-medium text-foreground">
+                  {product.merchant.businessName}
+                </span>
+              </span>
+              {product.merchant.verified && (
+                <CheckCircle className="w-3.5 h-3.5 text-success" />
+              )}
+            </div>
+          </div>
         </div>
       </section>
 
       {/* ============================================================= */}
-      {/* TABS                                                           */}
+      {/* MERCHANT CUSTOM LANDING PAGE                                   */}
+      {/* Shown if merchant has published a custom page                  */}
       {/* ============================================================= */}
-      <section>
+      {customPage && customLayout && (
+        <section className="border-t border-border">
+          <CustomPageRenderer
+            layout={customLayout}
+            theme={customPage.theme}
+            productName={product.name}
+            productDescription={product.description}
+            brandName={product.brand?.name}
+            brandContentPosts={brandContentPosts.map((p) => ({
+              id: p.id,
+              title: p.title,
+              coverUrl: p.coverUrl,
+              mediaUrl: p.mediaUrl,
+            }))}
+            reviews={product.reviews.map((r) => ({
+              userName: r.user.name,
+              rating: r.rating,
+              content: r.content,
+            }))}
+            functionTags={functionTags}
+          />
+        </section>
+      )}
+
+      {/* ============================================================= */}
+      {/* TABS (Evidence, Reviews, Community, etc.)                      */}
+      {/* ============================================================= */}
+      <section className="max-w-5xl mx-auto px-4 py-8">
         <Tabs
           tabs={[
             { id: "overview", label: "Overview", content: overviewContent },
-            { id: "brand-demo", label: "Brand Demo", content: brandDemoContent },
+            {
+              id: "brand-demo",
+              label: "Brand Demo",
+              content: brandDemoContent,
+            },
             { id: "community", label: "Community", content: communityContent },
             { id: "evidence", label: "Evidence", content: evidenceContent },
             { id: "reviews", label: "Reviews", content: reviewsContent },
@@ -537,8 +712,7 @@ export default async function ProductPage({
       {/* ============================================================= */}
       {/* BOTTOM LINKS                                                   */}
       {/* ============================================================= */}
-      <section className="border-t border-border pt-6 space-y-3">
-        {/* Related products */}
+      <section className="max-w-5xl mx-auto px-4 pb-8 space-y-3">
         <Link
           href={
             leagueStatus
@@ -553,7 +727,6 @@ export default async function ProductPage({
           <ArrowRight className="w-4 h-4 text-muted group-hover:text-foreground transition-colors" />
         </Link>
 
-        {/* After-sales & dispute center */}
         <Link
           href="/support"
           className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-border hover:bg-gray-100 transition-colors group"
