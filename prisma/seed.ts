@@ -35,36 +35,39 @@ async function main() {
   await prisma.user.deleteMany();
 
   // ===== USERS =====
+  // Default password for all seed users: password123
+  const seedPasswordHash = "$2b$12$DA6p051bJtxdXVR78mkbz.kA65ZNqZjaNEcpVummw9sBg7hrx/xsC";
+
   const users = await Promise.all([
     prisma.user.create({
-      data: { id: "user1", email: "alice@example.com", name: "Alice Chen", role: "user", passwordHash: "hashed_pw", avatarUrl: "/avatars/alice.jpg" },
+      data: { id: "user1", email: "alice@example.com", name: "Alice Chen", role: "user", passwordHash: seedPasswordHash, avatarUrl: "/avatars/alice.jpg" },
     }),
     prisma.user.create({
-      data: { id: "user2", email: "bob@example.com", name: "Bob Wang", role: "user", passwordHash: "hashed_pw", avatarUrl: "/avatars/bob.jpg" },
+      data: { id: "user2", email: "bob@example.com", name: "Bob Wang", role: "user", passwordHash: seedPasswordHash, avatarUrl: "/avatars/bob.jpg" },
     }),
     prisma.user.create({
-      data: { id: "user3", email: "carol@example.com", name: "Carol Li", role: "user", passwordHash: "hashed_pw", avatarUrl: "/avatars/carol.jpg" },
+      data: { id: "user3", email: "carol@example.com", name: "Carol Li", role: "user", passwordHash: seedPasswordHash, avatarUrl: "/avatars/carol.jpg" },
     }),
     prisma.user.create({
-      data: { id: "merchant1", email: "merchant1@example.com", name: "David Zhang", role: "merchant", passwordHash: "hashed_pw" },
+      data: { id: "merchant1", email: "merchant1@example.com", name: "David Zhang", role: "merchant", passwordHash: seedPasswordHash },
     }),
     prisma.user.create({
-      data: { id: "merchant2", email: "merchant2@example.com", name: "Eva Liu", role: "merchant", passwordHash: "hashed_pw" },
+      data: { id: "merchant2", email: "merchant2@example.com", name: "Eva Liu", role: "merchant", passwordHash: seedPasswordHash },
     }),
     prisma.user.create({
-      data: { id: "merchant3", email: "merchant3@example.com", name: "Frank Wu", role: "merchant", passwordHash: "hashed_pw" },
+      data: { id: "merchant3", email: "merchant3@example.com", name: "Frank Wu", role: "merchant", passwordHash: seedPasswordHash },
     }),
     prisma.user.create({
-      data: { id: "merchant4", email: "merchant4@example.com", name: "Grace Huang", role: "merchant", passwordHash: "hashed_pw" },
+      data: { id: "merchant4", email: "merchant4@example.com", name: "Grace Huang", role: "merchant", passwordHash: seedPasswordHash },
     }),
     prisma.user.create({
-      data: { id: "merchant5", email: "merchant5@example.com", name: "Henry Zhao", role: "merchant", passwordHash: "hashed_pw" },
+      data: { id: "merchant5", email: "merchant5@example.com", name: "Henry Zhao", role: "merchant", passwordHash: seedPasswordHash },
     }),
     prisma.user.create({
-      data: { id: "merchant6", email: "merchant6@example.com", name: "Ivy Sun", role: "merchant", passwordHash: "hashed_pw" },
+      data: { id: "merchant6", email: "merchant6@example.com", name: "Ivy Sun", role: "merchant", passwordHash: seedPasswordHash },
     }),
     prisma.user.create({
-      data: { id: "admin1", email: "admin@leagueshop.com", name: "Admin", role: "admin", passwordHash: "hashed_pw" },
+      data: { id: "admin1", email: "admin@leagueshop.com", name: "Admin", role: "admin", passwordHash: seedPasswordHash },
     }),
   ]);
 
